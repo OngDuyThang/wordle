@@ -272,7 +272,7 @@
     </div>
 
     <script type="module">
-      import { solve } from "./solver.js";
+      import { solve } from "/src/solver.js";
 
       const apiTypeSelect = document.getElementById("apiType");
       const groupSize = document.getElementById("groupSize");
@@ -381,10 +381,10 @@
         resultsContainer.innerHTML = "";
 
         try {
-          const response = await fetch(`../candidates/${wordLength}.json`);
+          const response = await fetch(`/candidates/${wordLength}.json`);
           if (!response.ok) {
             throw new Error(
-              `Candidate file ../candidates/${wordLength}.json not found or unable to load. Did you run "npm run init-candidates"?`,
+              `Candidate file /candidates/${wordLength}.json not found or unable to load. Did you run "npm run init-candidates"?`,
             );
           }
           const candidates = await response.json();
