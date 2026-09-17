@@ -4,6 +4,8 @@
 
 An automated Wordle solver client and CLI tool designed for the Votee Wordle API (`daily`, `random`, and `word` endpoints). The solver uses frequency-based heuristics and candidate filtering to guess target words step-by-step.
 
+**Live Demo**: [https://wordle-9o2c-opal.vercel.app/](https://wordle-9o2c-opal.vercel.app/)
+
 ---
 
 ## Instructions
