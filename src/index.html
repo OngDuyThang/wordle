@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wordle Solver</title>
+    <style>
+      :root {
+        --bg-color: #121213;
+        --card-bg: #1a1a1b;
+        --text-color: #ffffff;
+        --text-muted: #818384;
+        --border-color: #3a3a3c;
+        --correct-color: #538d4e;
+        --present-color: #b59f3b;
+        --absent-color: #3a3a3c;
+        --accent-color: #2563eb;
+        --accent-hover: #1d4ed8;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+          Arial, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 24px 16px;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 600px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      header {
+        text-align: center;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 16px;
+      }
+
+      h1 {
+        font-size: 1.75rem;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+
+      .card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 20px;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #d1d5db;
+      }
+
+      select,
+      input {
+        background-color: #272729;
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 10px 12px;
+        font-size: 1rem;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+
+      select:focus,
+      input:focus {
+        border-color: var(--accent-color);
+      }
+
+      .btn {
+        background-color: var(--accent-color);
+        color: #ffffff;
+        border: none;
+        border-radius: 6px;
+        padding: 12px 20px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition:
+          background-color 0.2s,
+          opacity 0.2s;
+        width: 100%;
+      }
+
+      .btn:hover:not(:disabled) {
+        background-color: var(--accent-hover);
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .status-badge {
+        display: inline-block;
+        margin-top: 10px;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+      }
+
+      .results-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-top: 8px;
+      }
+
+      .guess-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background-color: #222224;
+        padding: 10px 14px;
+        border-radius: 6px;
+        border: 1px solid var(--border-color);
+        animation: fadeIn 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .step-num {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        min-width: 24px;
+      }
+
+      .tiles {
+        display: flex;
+        gap: 6px;
+      }
+
+      .tile {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        border-radius: 4px;
+        color: #ffffff;
+      }
+
+      .tile.correct {
+        background-color: var(--correct-color);
+      }
+
+      .tile.present {
+        background-color: var(--present-color);
+      }
+
+      .tile.absent {
+        background-color: var(--absent-color);
+      }
+
+      .status-tag {
+        margin-left: auto;
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 4px;
+      }
+
+      .status-tag.found {
+        background-color: rgba(83, 141, 78, 0.2);
+        color: #6aaa64;
+        border: 1px solid #538d4e;
+      }
+
+      .status-tag.continue {
+        background-color: rgba(181, 159, 59, 0.15);
+        color: #d4b84b;
+      }
+
+      .status-tag.error {
+        background-color: rgba(220, 38, 38, 0.2);
+        color: #ef4444;
+        border: 1px solid #dc2626;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Votee Wordle Solver</h1>
+      </header>
+
+      <section class="card">
+        <div class="form-group">
+          <label for="apiType">API Type</label>
+          <select id="apiType">
+            <option value="daily">Daily Mode (/daily?size={size})</option>
+            <option value="random">
+              Random Mode (/random?size={size}&seed={seed})
+            </option>
+            <option value="word">Specific Word Mode (/word/{word})</option>
+          </select>
+        </div>
+
+        <!-- Size input for Daily and Random -->
+        <div class="form-group" id="groupSize">
+          <label for="inputSize">Word Size (Length)</label>
+          <input type="number" id="inputSize" min="1" max="31" value="5" />
+        </div>
+
+        <!-- Seed input for Random only -->
+        <div class="form-group hidden" id="groupSeed">
+          <label for="inputSeed">Seed (Optional, must be > 0)</label>
+          <input type="number" id="inputSeed" min="1" placeholder="e.g. 10" />
+        </div>
+
+        <!-- Word input for Word mode only -->
+        <div class="form-group hidden" id="groupWord">
+          <label for="inputWord">Target Word</label>
+          <input type="text" id="inputWord" placeholder="e.g. hello" />
+        </div>
+
+        <button type="button" id="btnSolve" class="btn">Solve Wordle</button>
+        <div id="statusMessage" class="status-badge"></div>
+      </section>
+
+      <section class="card" id="resultsCard">
+        <label>Guesses & Feedbacks</label>
+        <div id="resultsContainer" class="results-container">
+          <p style="color: var(--text-muted); font-size: 0.9rem">
+            Click "Solve Wordle" to start guessing.
+          </p>
+        </div>
+      </section>
+    </div>
+
+    <script type="module">
+      import { solve } from "./solver.js";
+
+      const apiTypeSelect = document.getElementById("apiType");
+      const groupSize = document.getElementById("groupSize");
+      const groupSeed = document.getElementById("groupSeed");
+      const groupWord = document.getElementById("groupWord");
+      const inputSize = document.getElementById("inputSize");
+      const inputSeed = document.getElementById("inputSeed");
+      const inputWord = document.getElementById("inputWord");
+      const btnSolve = document.getElementById("btnSolve");
+      const statusMessage = document.getElementById("statusMessage");
+      const resultsContainer = document.getElementById("resultsContainer");
+
+      function updateFormFields() {
+        const type = apiTypeSelect.value;
+        if (type === "daily") {
+          groupSize.classList.remove("hidden");
+          groupSeed.classList.add("hidden");
+          groupWord.classList.add("hidden");
+        } else if (type === "random") {
+          groupSize.classList.remove("hidden");
+          groupSeed.classList.remove("hidden");
+          groupWord.classList.add("hidden");
+        } else if (type === "word") {
+          groupSize.classList.add("hidden");
+          groupSeed.classList.add("hidden");
+          groupWord.classList.remove("hidden");
+        }
+      }
+
+      apiTypeSelect.addEventListener("change", updateFormFields);
+      updateFormFields();
+
+      function renderRow(step, guess, feedbackArray, isFound) {
+        const row = document.createElement("div");
+        row.className = "guess-row";
+
+        const stepLabel = document.createElement("span");
+        stepLabel.className = "step-num";
+        stepLabel.textContent = `#${step}`;
+        row.appendChild(stepLabel);
+
+        const tiles = document.createElement("div");
+        tiles.className = "tiles";
+
+        for (let i = 0; i < guess.length; i++) {
+          const tile = document.createElement("div");
+          const fb = feedbackArray[i] || "absent";
+          tile.className = `tile ${fb}`;
+          tile.textContent = guess[i];
+          tiles.appendChild(tile);
+        }
+        row.appendChild(tiles);
+
+        const tag = document.createElement("span");
+        tag.className = `status-tag ${isFound ? "found" : "continue"}`;
+        tag.textContent = isFound ? "FOUND!" : "CONTINUE";
+        row.appendChild(tag);
+
+        resultsContainer.appendChild(row);
+      }
+
+      btnSolve.addEventListener("click", async () => {
+        const type = apiTypeSelect.value;
+        let targetUrl = "";
+        let wordLength = 5;
+
+        if (type === "daily") {
+          const sizeVal = parseInt(inputSize.value, 10) || 5;
+          if (sizeVal < 1) {
+            alert("Size must be greater than 0");
+            return;
+          }
+          wordLength = sizeVal;
+          targetUrl = `https://wordle.votee.dev:8000/daily?size=${sizeVal}`;
+        } else if (type === "random") {
+          const sizeVal = parseInt(inputSize.value, 10) || 5;
+          if (sizeVal < 1) {
+            alert("Size must be greater than 0");
+            return;
+          }
+          wordLength = sizeVal;
+
+          const seedVal = inputSeed.value.trim();
+          if (seedVal) {
+            const parsedSeed = parseInt(seedVal, 10);
+            if (isNaN(parsedSeed) || parsedSeed <= 0) {
+              alert("Seed must be greater than 0");
+              return;
+            }
+            targetUrl = `https://wordle.votee.dev:8000/random?size=${sizeVal}&seed=${parsedSeed}`;
+          } else {
+            targetUrl = `https://wordle.votee.dev:8000/random?size=${sizeVal}`;
+          }
+        } else if (type === "word") {
+          const wordVal = inputWord.value.trim().toLowerCase();
+          if (!wordVal) {
+            alert("Please enter a target word");
+            return;
+          }
+          wordLength = wordVal.length;
+          targetUrl = `https://wordle.votee.dev:8000/word/${encodeURIComponent(wordVal)}`;
+        }
+
+        btnSolve.disabled = true;
+        statusMessage.textContent = `Loading candidates for word length ${wordLength}...`;
+        resultsContainer.innerHTML = "";
+
+        try {
+          const response = await fetch(`../candidates/${wordLength}.json`);
+          if (!response.ok) {
+            throw new Error(
+              `Candidate file ../candidates/${wordLength}.json not found or unable to load. Did you run "npm run init-candidates"?`,
+            );
+          }
+          const candidates = await response.json();
+
+          if (!Array.isArray(candidates) || candidates.length === 0) {
+            throw new Error(`No candidates available for size ${wordLength}`);
+          }
+
+          statusMessage.textContent = `Loaded ${candidates.length} candidates. Solving...`;
+
+          let step = 1;
+          for await (const message of solve(candidates, targetUrl)) {
+            // message format from solver.js:
+            // yield `${guess} ${feedback} FOUND!` or `${guess} ${feedback} CONTINUE....`
+            // feedback is array like ['absent', 'present', 'correct']
+            const parts = message.split(" ");
+            const guess = parts[0];
+            const feedbackStr = parts[1]; // comma-separated strings: absent,present,correct
+            const feedbackArray = feedbackStr.split(",");
+            const isFound = message.includes("FOUND!");
+
+            renderRow(step++, guess, feedbackArray, isFound);
+
+            if (isFound) {
+              statusMessage.textContent = `Solved successfully in ${step - 1} guesses!`;
+            }
+          }
+        } catch (err) {
+          console.error(err);
+          statusMessage.textContent = `Error: ${err.message}`;
+          const errTag = document.createElement("div");
+          errTag.className = "status-tag error";
+          errTag.style.marginTop = "10px";
+          errTag.textContent = err.message;
+          resultsContainer.appendChild(errTag);
+        } finally {
+          btnSolve.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>
