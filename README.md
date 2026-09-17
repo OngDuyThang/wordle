@@ -73,6 +73,7 @@ You can run the solver either via Node.js (server side) or directly in a web bro
 ├── src/
 │   ├── index.html            # Web UI with API selector, parameters, and interactive board
 │   └── solver.js             # Core solver generator function and CLI runner
-├── package.json
+├── package.json               # Node.js project configuration and build scripts
+├── vercel.json                # Vercel deployment configuration and URL rewrites
 └── README.md
 ```
